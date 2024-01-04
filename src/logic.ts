@@ -369,8 +369,16 @@ function mySplitOrderMatchToPortfolio(listDataDTO: ImportOrderMatchDTO[]) {
             var productCode = stepPrice.productCode;
             var portfolioCompoRequests: PortfolioCompoRequest[] = portfolioCompoRequestRepository.findByPortfolioIdInAndProductCode(productCode)
             var mapOrderVolumeByPortId = mappingOrderVolumeByPortId(portfolioCompoRequests)
+
             mapOrderVolumeByPortId.sort(sortASCByOrderVolume)
             var totalOrderVolumeRequest = mapOrderVolumeByPortId.map(r => r.orderVolume).reduce(reduceSum)
+            var totalMatchedVolumeRequest = detailOrderMatches.map(r => r.volume).reduce(reduceSum)
+
+            if (totalMatchedVolumeRequest < totalOrderVolumeRequest) {
+                changeVolumeRequest(totalMatchedVolumeRequest, mapOrderVolumeByPortId, totalOrderVolumeRequest)
+                var totalOrderVolumeRequest = mapOrderVolumeByPortId.map(r => r.orderVolume).reduce(reduceSum)
+                console.log('changeVolumeRequest', mapOrderVolumeByPortId)
+            }
 
             var threshold = mapOrderVolumeByPortId.length - 1
             // var size = mapOrderVolumeByPortId.length
@@ -480,8 +488,25 @@ function mySplitOrderMatchToPortfolio(listDataDTO: ImportOrderMatchDTO[]) {
     })
 }
 
+function changeVolumeRequest(
+    totalMatchedVolumeRequest: number,
+    mapOrderVolumeByPortId: PortfolioCompoRequest[],
+    totalOrderVolumeRequest: number
+) {
+    var restVolume = totalMatchedVolumeRequest
+    mapOrderVolumeByPortId.forEach((compoRequest: PortfolioCompoRequest) => {
+        var orderVolume = compoRequest.orderVolume
+        var rate = (orderVolume / totalOrderVolumeRequest)
+        compoRequest.orderVolume = floor(rate * totalMatchedVolumeRequest)
+        restVolume -= compoRequest.orderVolume
+    })
+    if (restVolume > 0) {
+        mapOrderVolumeByPortId[mapOrderVolumeByPortId.length - 1].orderVolume += restVolume
+    }
+}
+
 function allocateMissingVolume(
-    portfolioMissingVolume: Record<number, any> ,
+    portfolioMissingVolume: Record<number, any>,
     mapListDetailImportByPortId: Record<number, DetailImportOrderMatchDTO[]>
 ) {
     Object.keys(portfolioMissingVolume).map(portfolioId => {

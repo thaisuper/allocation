@@ -1,6 +1,7 @@
 import React from 'react';
 import logo from './logo.svg';
 import './App.css';
+import { caculateStart } from './logic';
 
 function App() {
   return (
@@ -10,14 +11,12 @@ function App() {
         <p>
           Edit <code>src/App.tsx</code> and save to reload.
         </p>
-        <a
+        <button
           className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
+          onClick={() => caculateStart()}
         >
           Learn React
-        </a>
+        </button>
       </header>
     </div>
   );

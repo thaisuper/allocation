@@ -360,6 +360,7 @@ function mySplitOrderMatchToPortfolio(listDataDTO: ImportOrderMatchDTO[]) {
         var mapListDetailImportByPortId: Record<number, DetailImportOrderMatchDTO[]> = {};
         var accumulationVolumeByPortfolio: Record<number, number> = {};
         var totalDeviation = 0;
+        var portfolioFullState: Record<number, number> = {};
 
         detailOrderMatches.forEach(stepPrice => {
             // var productCode = detail.getProductCode();
@@ -372,7 +373,7 @@ function mySplitOrderMatchToPortfolio(listDataDTO: ImportOrderMatchDTO[]) {
             var totalOrderVolumeRequest = mapOrderVolumeByPortId.map(r => r.orderVolume).reduce(reduceSum)
 
             var threshold = mapOrderVolumeByPortId.length - 1
-            var size = mapOrderVolumeByPortId.length
+            // var size = mapOrderVolumeByPortId.length
             var reduceThreshold = 0
 
             var totalAllocationVolume = 0
@@ -381,33 +382,57 @@ function mySplitOrderMatchToPortfolio(listDataDTO: ImportOrderMatchDTO[]) {
             for (let i = 0; i <= threshold; i++) {
                 var compoRequest = mapOrderVolumeByPortId[i];
                 var allocationRate = compoRequest.orderVolume / totalOrderVolumeRequest;
-                var result = allocate(
-                    compoRequest.portfolioId,
-                    compoRequest.orderVolume,
-                    allocationRate,
-                    stepPrice.volume,
-                    i,
-                    threshold,
-                    size,
-                    reduceThreshold,
-                    totalDeviation,
-                    accumulationVolumeByPortfolio
-                )
-                // allocatedAmount,
-                // totalDeviation,
-                // accumulationVolumeByPortfolio,
-                // threshold,
-                // reduceThreshold
-                var allocationVolume = result[0]
-                totalDeviation = result[1]
-                accumulationVolumeByPortfolio = result[2]
-                threshold = result[3]
-                reduceThreshold = result[4]
-                totalAllocationVolume += allocationVolume
+
+                // var result = allocate(
+                //     compoRequest.portfolioId,
+                //     compoRequest.orderVolume,
+                //     allocationRate,
+                //     stepPrice.volume,
+                //     i,
+                //     threshold,
+                //     size,
+                //     reduceThreshold,
+                //     totalDeviation,
+                //     accumulationVolumeByPortfolio
+                // )
+
+                var portfolioId = compoRequest.portfolioId
+                var totalAmount = stepPrice.volume
+                var maxAllocation = compoRequest.orderVolume
+
+
+                var floatAmount = totalAmount * allocationRate
+                var floorAmount = floor(floatAmount)
+                var deviation = floatAmount - floorAmount
+
+                totalDeviation = totalDeviation + deviation
+
+                var curentAccumulation = (accumulationVolumeByPortfolio[portfolioId] ?? 0)
+                var availbleAllocation = maxAllocation - curentAccumulation
+                var distance = threshold - i - totalDeviation
+                var added = (totalDeviation >= 1 && distance <= 1) ? 1 : 0
+                var allocatedAmount = Math.min(floorAmount + added, availbleAllocation)
+                totalDeviation -= allocatedAmount - floorAmount
+
+                var accumulationVolume = curentAccumulation + allocatedAmount
+                accumulationVolumeByPortfolio[portfolioId] = accumulationVolume
+
+                if (accumulationVolume === maxAllocation) {
+                    reduceThreshold++
+                }
+                if (i === threshold) {
+                    threshold -= reduceThreshold
+                    reduceThreshold = 0
+                }
+
+                if (895 === allocatedAmount) {
+                    debugger
+                }
+                totalAllocationVolume += allocatedAmount
 
                 allocateToExistingPortfolio(
-                    compoRequest.portfolioId,
-                    allocationVolume,
+                    portfolioId,
+                    allocatedAmount,
                     stepPrice,
                     mapListDetailImportByPortId
                 )

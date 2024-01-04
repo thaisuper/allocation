@@ -360,7 +360,7 @@ function mySplitOrderMatchToPortfolio(listDataDTO: ImportOrderMatchDTO[]) {
         var mapListDetailImportByPortId: Record<number, DetailImportOrderMatchDTO[]> = {};
         var accumulationVolumeByPortfolio: Record<number, number> = {};
         var totalDeviation = 0;
-        var portfolioFullState: Record<number, number> = {};
+        var portfolioMissingVolume: Record<number, any> = {};
 
         detailOrderMatches.forEach(stepPrice => {
             // var productCode = detail.getProductCode();
@@ -419,15 +419,21 @@ function mySplitOrderMatchToPortfolio(listDataDTO: ImportOrderMatchDTO[]) {
 
                 if (accumulationVolume === maxAllocation) {
                     reduceThreshold++
+                    delete portfolioMissingVolume[portfolioId]
+                } else {
+                    portfolioMissingVolume[portfolioId] = {
+                        miss: maxAllocation - accumulationVolume,
+                        price: stepPrice.price
+                    }
                 }
                 if (i === threshold) {
                     threshold -= reduceThreshold
                     reduceThreshold = 0
                 }
 
-                if (895 === allocatedAmount) {
-                    debugger
-                }
+                // if (895 === allocatedAmount) {
+                //     debugger
+                // }
                 totalAllocationVolume += allocatedAmount
 
                 allocateToExistingPortfolio(
@@ -438,6 +444,10 @@ function mySplitOrderMatchToPortfolio(listDataDTO: ImportOrderMatchDTO[]) {
                 )
             }
         })
+
+        if (Object.keys(portfolioMissingVolume)) {
+            allocateMissingVolume(portfolioMissingVolume, mapListDetailImportByPortId)
+        }
 
         var totalAllocatedVolume = Object.values(accumulationVolumeByPortfolio).reduce(reduceSum)
         var totalMatch = detailOrderMatches.map(o => o.volume).reduce(reduceSum)
@@ -467,6 +477,19 @@ function mySplitOrderMatchToPortfolio(listDataDTO: ImportOrderMatchDTO[]) {
         console.log(logData)
         console.log(logPrice)
         // End
+    })
+}
+
+function allocateMissingVolume(
+    portfolioMissingVolume: Record<number, any> ,
+    mapListDetailImportByPortId: Record<number, DetailImportOrderMatchDTO[]>
+) {
+    Object.keys(portfolioMissingVolume).map(portfolioId => {
+        mapListDetailImportByPortId[portfolioId].forEach((detail: DetailImportOrderMatchDTO) => {
+            var added = portfolioMissingVolume[portfolioId].miss
+            var price = portfolioMissingVolume[portfolioId].price
+            detail.volume += detail.price === price ? added : 0
+        })
     })
 }
 

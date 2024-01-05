@@ -1,9 +1,16 @@
-package java;
+package jav;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.json.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 
 class PortfolioCompoRequest {
     private String productCode;
@@ -109,6 +116,10 @@ class DetailImportOrderMatchDTO {
     public void setPrice(int price) {
         this.price = price;
     }
+
+    public String toString() {
+        return String.format("{productCode: %s, price: %d, volume: %d}", this.productCode, this.price, this.volume);
+    }
 }
 
 class ImportOrderMatchDTO {
@@ -146,6 +157,10 @@ class ImportOrderMatchDTO {
     public void setDetailOrderMatches(List<DetailImportOrderMatchDTO> detailOrderMatches) {
         this.detailOrderMatches = detailOrderMatches;
     }
+
+    public String toString() {
+        return "{detailOrderMatches: [" + this.detailOrderMatches + "]}";
+    }
 }
 
 public class Main {
@@ -178,7 +193,7 @@ public class Main {
             Map<Integer, List<DetailImportOrderMatchDTO>> mapListDetailImportByPortId = new HashMap<>();
             Map<Integer, Integer> accumulationVolumeByPortfolio = new HashMap<>();
             int totalDeviation = 0;
-            Map<Integer, Object> portfolioMissingVolume = new HashMap<>();
+            Map<Integer, Map<String, Integer>> portfolioMissingVolume = new HashMap<>();
             for (DetailImportOrderMatchDTO stepPrice : detailOrderMatches) {
                 String productCode = stepPrice.getProductCode();
                 List<PortfolioCompoRequest> portfolioCompoRequests = PortfolioCompoRequestRepository
@@ -236,28 +251,41 @@ public class Main {
             if (!portfolioMissingVolume.isEmpty()) {
                 allocateMissingVolume(portfolioMissingVolume, mapListDetailImportByPortId);
             }
-            System.out.println("mapListDetailImportByPortId " + mapListDetailImportByPortId);
-            Map<String, Object> logData = new HashMap<>();
-            Map<String, Object> logPrice = new HashMap<>();
+
+            Map<String, Map<String, Integer>> logData = new HashMap<>();
+            Map<String, Map<String, Integer>> logPrice = new HashMap<>();
             for (Integer id : mapListDetailImportByPortId.keySet()) {
                 List<DetailImportOrderMatchDTO> dtoList = mapListDetailImportByPortId.get(id);
                 int total = dtoList.stream().mapToInt(DetailImportOrderMatchDTO::getVolume).sum();
                 logData.put("Port " + id + " total volume",
-                        Map.of("result", total, "expected",
+                        Map.of("-result-", total, "expected",
                                 portfolioCompoRequestRepositoryData.stream()
                                         .filter(p -> Integer.toString(p.getPortfolioId()).equals(Integer.toString(id)))
                                         .findFirst().get().getOrderVolume()));
                 for (DetailImportOrderMatchDTO e : dtoList) {
                     String kP = "match price " + e.getPrice();
                     logPrice.put(kP,
-                            Map.of("result", (int) logPrice.getOrDefault(kP, 0) + e.getVolume(), "expected",
+                            Map.of("-result-", logPrice.getOrDefault(kP,
+
+                                    Map.of("-result-", 0)).get("-result-") + e.getVolume(),
+
+                                    "expected",
                                     input.get(0).getDetailOrderMatches().stream()
                                             .filter(d -> d.getPrice() == e.getPrice()).findFirst().get().getVolume()));
                 }
             }
-            System.out.println(logData);
-            System.out.println(logPrice);
+            String println = String.format("[%s,%s,%s]",
+                    new JSONObject(mapListDetailImportByPortId).toString(),
+                    new JSONObject(logData).toString(),
+                    new JSONObject(logPrice).toString());
+            // System.out.println(println);
+
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            JsonElement jsonElement = JsonParser.parseString(println);
+            String prettyJson = gson.toJson(jsonElement);
+            System.out.println(prettyJson);
         }
+
     }
 
     public static void changeVolumeRequest(int totalMatchedVolumeRequest,
@@ -275,12 +303,12 @@ public class Main {
         }
     }
 
-    public static void allocateMissingVolume(Map<Integer, Object> portfolioMissingVolume,
+    public static void allocateMissingVolume(Map<Integer, Map<String, Integer>> portfolioMissingVolume,
             Map<Integer, List<DetailImportOrderMatchDTO>> mapListDetailImportByPortId) {
         for (Integer portfolioId : portfolioMissingVolume.keySet()) {
             for (DetailImportOrderMatchDTO detail : mapListDetailImportByPortId.get(portfolioId)) {
-                int added = (int) portfolioMissingVolume.get(portfolioId);
-                int price = (int) portfolioMissingVolume.get(portfolioId);
+                int added = portfolioMissingVolume.get(portfolioId).get("miss");
+                int price = portfolioMissingVolume.get(portfolioId).get("price");
                 detail.setVolume(detail.getPrice() == price ? detail.getVolume() + added : detail.getVolume());
             }
         }

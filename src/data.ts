@@ -12,35 +12,30 @@ export const input: ImportOrderMatchDTO[] = [
             {
                 price: 20000,
                 productCode: 'AAA',
-                securitiesFee: 0,
                 orderType: 'BUY',
                 volume: 250,
             },
             {
                 price: 21000,
                 productCode: 'AAA',
-                securitiesFee: 0,
                 orderType: 'BUY',
                 volume: 400,
             },
             {
                 price: 22000,
                 productCode: 'AAA',
-                securitiesFee: 0,
                 orderType: 'BUY',
                 volume: 300,
             },
             {
                 price: 23000,
                 productCode: 'AAA',
-                securitiesFee: 0,
                 orderType: 'BUY',
                 volume: 250,
             },
             {
                 price: 24000,
                 productCode: 'AAA',
-                securitiesFee: 0,
                 orderType: 'BUY',
                 volume: 200,
             }

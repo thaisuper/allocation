@@ -10,25 +10,39 @@ export const input: ImportOrderMatchDTO[] = [
         portfolioIds: [111, 222, 333],
         detailOrderMatches: [
             {
-                price: 15000,
+                price: 20000,
                 productCode: 'AAA',
                 securitiesFee: 0,
                 orderType: 'BUY',
-                volume: 3000,
+                volume: 250,
             },
             {
-                price: 16500,
+                price: 21000,
                 productCode: 'AAA',
                 securitiesFee: 0,
                 orderType: 'BUY',
-                volume: 3100,
+                volume: 400,
             },
             {
-                price: 17200,
+                price: 22000,
                 productCode: 'AAA',
                 securitiesFee: 0,
                 orderType: 'BUY',
-                volume: 2000,
+                volume: 300,
+            },
+            {
+                price: 23000,
+                productCode: 'AAA',
+                securitiesFee: 0,
+                orderType: 'BUY',
+                volume: 250,
+            },
+            {
+                price: 24000,
+                productCode: 'AAA',
+                securitiesFee: 0,
+                orderType: 'BUY',
+                volume: 200,
             }
         ]
     }
@@ -39,19 +53,19 @@ export const input: ImportOrderMatchDTO[] = [
  */
 export const portfolioCompoRequestRepositoryData: PortfolioCompoRequest[] = [
     {
-        orderVolume: 2200,
+        orderVolume: 550,
         portfolioId: 111,
         productCode: 'AAA',
         type: 'BUY',
     },
     {
-        orderVolume: 2500,
+        orderVolume: 450,
         portfolioId: 222,
         productCode: 'AAA',
         type: 'BUY',
     },
     {
-        orderVolume: 3500,
+        orderVolume: 400,
         portfolioId: 333,
         productCode: 'AAA',
         type: 'BUY',
